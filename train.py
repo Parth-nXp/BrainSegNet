@@ -2,7 +2,7 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 
-def train_model(model, dataloader, optimizer, criterion, num_epochs=10000):
+def train_model(model, dataloader, optimizer, criterion, num_epochs=100):
     model.train()
     for epoch in range(num_epochs):
         running_loss = 0.0
