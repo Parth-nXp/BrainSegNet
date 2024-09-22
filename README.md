@@ -32,6 +32,23 @@ The project is divided into five main scripts:
    - **Purpose**: The main entry point of the project, responsible for integrating dataset loading, model training, and evaluation.
    - **Key Functionality**:
      - Loads the dataset, trains the model, saves the trained weights, and evaluates the model on the test dataset.
+## Dataset
+
+The dataset used in this project comes from two key sources:
+
+1. **Mateusz Buda, Ashirbani Saha, Maciej A. Mazurowski**  
+   _"Association of genomic subtypes of lower-grade gliomas with shape features automatically extracted by a deep learning algorithm." Computers in Biology and Medicine, 2019._
+
+2. **Maciej A. Mazurowski, Kal Clark, Nicholas M. Czarnek, Parisa Shamsesfandabadi, Katherine B. Peters, Ashirbani Saha**  
+   _"Radiogenomics of lower-grade glioma: algorithmically-assessed tumor shape is associated with tumor genomic subtypes and patient outcomes in a multi-institutional study with The Cancer Genome Atlas data." Journal of Neuro-Oncology, 2017._
+
+This dataset contains brain MR images together with manual FLAIR abnormality segmentation masks. The images were obtained from **The Cancer Imaging Archive (TCIA)** and correspond to 110 patients included in **The Cancer Genome Atlas (TCGA)** lower-grade glioma collection. Each patient has at least one fluid-attenuated inversion recovery (FLAIR) sequence and genomic cluster data available.
+
+- Tumor genomic clusters and patient data are provided in the `data.csv` file.
+- For more information on genomic data, refer to the publication _"Comprehensive, Integrative Genomic Analysis of Diffuse Lower-Grade Gliomas"_ and supplementary material available [here](https://www.nejm.org/doi/full/10.1056/NEJMoa1402121).
+
+
+
 
 ## Installation
 
