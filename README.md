@@ -9,30 +9,38 @@ The project is divided into five main scripts:
 ### 1. `dataset.py`
    - **Purpose**: Contains the `BrainMRIDataset` class, responsible for loading and preprocessing brain MRI images and their corresponding masks.
    - **Key Functionality**:
-     - `__getitem__()`: Loads, normalizes, and returns the MRI image and mask as PyTorch tensors.
-     - `__len__()`: Returns the size of the dataset.
-
+     - `__getitem__()`: Loads an MRI image and its corresponding mask, resizes them to a target size, normalizes the pixel values, and returns them as PyTorch tensors. The image can optionally be augmented using transformations.
+     - `__len__()`: Returns the number of samples (image-mask pairs) in the dataset.
+       
 ### 2. `model.py`
-   - **Purpose**: Contains the U-Net architecture used for segmenting the MRI images.
+   - **Purpose**: Defines the U-Net architecture, which is used for segmenting brain MRI images.
    - **Key Functionality**:
-     - Defines the U-Net architecture with an encoder-decoder structure using convolutional layers, batch normalization, and ReLU activations.
-     - Implements `forward()` method to handle the forward pass through the network.
+     - The U-Net architecture is defined with an encoder-decoder structure. The encoder progressively downsamples the input using convolutional layers, while the decoder upsamples it back to the original resolution, concatenating corresponding encoder layers via skip connections.
+     - Implements `forward()` method to perform the forward pass of the U-Net. This method defines how the data flows through the encoder, the bottleneck (middle layers), and the decoder to produce a segmentation map.
+
 
 ### 3. `train.py`
-   - **Purpose**: Contains the `train_model()` function, which manages the training loop.
+   - **Purpose**: Contains the `train_model()` function, which manages the model's training loop, including loss calculation, metric tracking, and model optimization.
    - **Key Functionality**:
-     - Performs forward and backward passes, computes the loss using binary cross-entropy with logits, and updates model weights using the Adam optimizer.
+     - **Training Loop**: Performs forward and backward passes on the training data, computes the loss using the Dice coefficient loss function, and updates the model’s weights using the Adam optimizer.
+     - **Metrics Calculation**: During each epoch, the Dice coefficient and IoU (Intersection over Union) are calculated to assess the segmentation accuracy.
+     - **Model Checkpointing**: Saves the model's weights whenever the validation loss improves during training.
+     - **Learning Rate Scheduling**: Adjusts the learning rate using a scheduler after a fixed number of epochs.
 
 ### 4. `evaluate.py`
-   - **Purpose**: Contains the `evaluate_model()` function to visualize the segmentation performance of the trained model.
+   - **Purpose**: Contains the `evaluate_model()` function to visualize the performance of the trained U-Net model on the test dataset.
    - **Key Functionality**:
-     - Displays the original MRI, ground truth mask, and predicted mask side by side for qualitative evaluation.
+     - **Visualization**: For a random batch of images from the test set, the original MRI image, the ground truth segmentation mask, and the predicted segmentation mask are displayed side by side. This allows qualitative assessment of the model's performance on unseen data.
+     - **Inference**: The model is put into evaluation mode `(model.eval())`, and predictions are generated without gradient computation for efficiency.
+
 
 ### 5. `main.py`
-   - **Purpose**: The main entry point of the project, responsible for integrating dataset loading, model training, and evaluation.
+   - **Purpose**: Serves as the main entry point for the project, integrating dataset loading, model training, and model evaluation into one cohesive pipeline.
    - **Key Functionality**:
-     - Loads the dataset, trains the model, saves the trained weights, and evaluates the model on the test dataset.
-## Dataset
+     - **Dataset Preparation**: Loads the dataset and splits it into training and testing sets. Applies necessary transformations like data augmentation for training.
+     - **Model Initialization**: Instantiates the U-Net model, optimizer, and learning rate scheduler.
+     - **Training and Validation**: Trains the model using the `train_model()` function and tracks the model’s performance on the validation set.
+     - **Evaluation**: After training, the model is evaluated using the `evaluate_model()` function, which visualizes predictions on the test set.
 
 The dataset used in this project comes from two key sources:
 
