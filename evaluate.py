@@ -1,3 +1,5 @@
+# evaluate.py
+
 import matplotlib.pyplot as plt
 import cv2
 import numpy as np
@@ -17,4 +19,25 @@ def evaluate_model(model, df_test, device, im_height, im_width):
         img_tensor = torch.from_numpy(img).permute(2, 0, 1).unsqueeze(0).to(device)
         
         with torch.no_grad():
-            pred
+            pred = model(img_tensor).cpu().squeeze().numpy() > 0.5
+        
+        plt.figure(figsize=(12, 6))
+        plt.subplot(1, 3, 1)
+        plt.imshow(img)
+        plt.title('Original Image')
+        
+        mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+        mask = cv2.resize(mask, (im_height, im_width))
+        
+        plt.subplot(1, 3, 2)
+        plt.imshow(mask, cmap='gray')
+        plt.title('Original Mask')
+        
+        plt.subplot(1, 3, 3)
+        plt.imshow(pred, cmap='gray')
+        plt.title('Prediction')
+
+        plt.show()
+
+
+       
