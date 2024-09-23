@@ -1,57 +1,52 @@
-# main.py
-
 import torch
-from torch.utils.data import DataLoader
 from dataset import BrainMRIDataset
 from model import UNet
-from train import train_model
+from train import train_model, dice_coefficient_loss
 from evaluate import evaluate_model
-import torch.optim as optim
-import torch.nn as nn
+from torch.utils.data import DataLoader
+from sklearn.model_selection import train_test_split
 import pandas as pd
 from glob import glob
-from sklearn.model_selection import train_test_split
+from torchvision import transforms
 
-def main():
-    # Prepare data
-    mask_paths = glob('./Dataset/kaggle_3m/*/*_mask*')
-    image_paths = [i.replace('_mask', '') for i in mask_paths]
+# Set parameters
+im_height, im_width = 256, 256
+batch_size = 4
+epochs = 150
+learning_rate = 1e-4
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    df = pd.DataFrame({'image_paths': image_paths, 'mask_paths': mask_paths})
-    df_train, df_test = train_test_split(df, test_size=0.05)
-    df_train, df_val = train_test_split(df_train, test_size=0.05)
+# Load dataset
+image_filenames = [i.replace("_mask", "") for i in glob("./MRI_Dataset/*/*_mask*")]
+mask_images = glob("./MRI_Dataset/*/*_mask*")
+df = pd.DataFrame({'image_filename': image_filenames, 'mask_images': mask_images})
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+df_train, df_test = train_test_split(df, test_size=0.1)
 
-    # Datasets and dataloaders
-    train_dataset = BrainMRIDataset(df_train['image_paths'].tolist(), df_train['mask_paths'].tolist(), device=device)
-    val_dataset = BrainMRIDataset(df_val['image_paths'].tolist(), df_val['mask_paths'].tolist(), device=device)
-    test_dataset = BrainMRIDataset(df_test['image_paths'].tolist(), df_test['mask_paths'].tolist(), device=device)
+# Define transforms
+train_transforms = transforms.Compose([
+    transforms.RandomRotation(20),
+    transforms.RandomHorizontalFlip(),
+    transforms.Resize((im_height, im_width)),
+    transforms.ToTensor()
+])
+mask_transform = transforms.Compose([transforms.ToTensor()])
 
-    train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=4, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=4)
+# Create datasets and loaders
+train_dataset = BrainMRIDataset(df_train, train_transforms, mask_transform)
+val_dataset = BrainMRIDataset(df_test, train_transforms, mask_transform)
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-    # Model initialization
-    model = UNet().to(device)
+# Initialize model, optimizer, and scheduler
+model = UNet().to(device)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
 
-    if torch.cuda.device_count() > 1:
-        model = nn.DataParallel(model)
+# Train model
+train_loss, val_loss, train_dice, val_dice = train_model(
+    model, train_loader, val_loader, dice_coefficient_loss, optimizer, epochs, device, scheduler
+)
 
-    optimizer = optim.Adam(model.parameters(), lr=1e-4)
-    criterion = nn.BCEWithLogitsLoss()
-
-    # Train the model
-    train_model(model, train_loader, optimizer, criterion)
-
-    # Save the trained model
-    torch.save(model.state_dict(), 'model.pth')
-
-    # Load the saved model
-    model.load_state_dict(torch.load('model.pth'))
-
-    # Evaluate the model
-    evaluate_model(model, test_loader, device)
-
-if __name__ == '__main__':
-    main()
+# Evaluate model
+evaluate_model(model, val_loader, device, im_height, im_width)
